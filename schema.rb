@@ -1,5 +1,6 @@
 require 'sqlite3'
-require 'bloc_record/utility'
+# require 'bloc_record/utility'
+require_relative 'utility'
 
 module Schema
   def table
