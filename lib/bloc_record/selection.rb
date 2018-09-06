@@ -30,7 +30,30 @@ module Selection
       WHERE #{attributes} = #{BlocRecord::Utility.sql_strings(value)};
     SQL
 
-    rows_to_array(rows)
+    rows_to_array(row)
+  end
+
+  def find_each(options = {})
+    start = options.start || 0
+    batch_size = options.batch_size || 0
+
+    row = connection.get_first_row <<-SQL
+      SELECT #{columns.join ","} FROM #{table}
+      LIMIT #{batch_size} #{start};
+    SQL
+    rows_to_array(row)
+
+    something.each do |something else|
+      something?
+      yield something?
+      something?
+    end
+  end
+
+
+  def find_in_batches(options = {})
+    start = options.start || 0
+    batch_size = options.batch_size || 0
   end
 
   def take(num=1)
@@ -81,6 +104,13 @@ module Selection
     SQL
 
     rows_to_array(rows)
+  end
+
+  def method_missing(m, *args, &block)
+    # fb = m.slice(0..(m.index(m.split("_")[-1])-2)) # "find_by"
+    # arg = m.split('_')[2, a.length - 1].join("_").to_sym # method name
+    s = m.split('_')[2, m.length - 1].join("_").to_sym
+    find_by(s, args)
   end
 
   private
