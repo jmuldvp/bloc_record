@@ -41,12 +41,9 @@ module Selection
       SELECT #{columns.join ","} FROM #{table}
       LIMIT #{batch_size} #{start};
     SQL
-    rows_to_array(row)
 
-    something.each do |something else|
-      something?
-      yield something?
-      something?
+    row.each do |row|
+      yield(rows_to_array(row))
     end
   end
 
@@ -54,6 +51,14 @@ module Selection
   def find_in_batches(options = {})
     start = options.start || 0
     batch_size = options.batch_size || 0
+
+    rows = connection.execute <<-SQL
+      SELECT #{columns.join ","} FROM #{table}
+      LIMIT #{batch_size} #{start};
+    SQL
+
+    arr = rows_to_array(rows)
+    yield(arr)
   end
 
   def take(num=1)
