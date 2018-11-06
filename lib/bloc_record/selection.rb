@@ -143,10 +143,20 @@ module Selection
 
   def order(*args)
     if args.count > 1
-      order = args.join(",")
+      case args.first
+      when String
+        order = args.join(",")
+      when Symbol
+        expression_hash = BlocRecord::Utility.convert_keys(args.last)
+        expression = expression_hash.map {|key, value| "#{key} #{BlocRecord::Utility.sql_strings(value)}"}
+        order = "#{args.first.to_s}, #{expression}"
+      when Hash
+        expression_hash = BlocRecord::Utility.convert_keys(args.first)
+        order = expression_hash.map {|key, value| "#{key} #{BlocRecord::Utility.sql_strings(value)}"}.join(",")
     else
       order = args.first.to_s
     end
+
     rows = connection.execute <<-SQL
       SELECT * FROM #{table}
       ORDER BY #{order};
@@ -171,6 +181,44 @@ module Selection
           SELECT * FROM #{table}
           INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
         SQL
+      when Hash
+        expression_hash = BlocRecord::Utility.convert_keys(args.first)
+        expression = expression_hash {|key, value| "INNER JOIN #{key} ON #{key}.#{table}_id = #{table}.id INNER JOIN #{BlocRecord::Utility.sql_strings(value)} ON #{BlocRecord::Utility.sql_strings(value)}.#{key}_id = #{key}.id"}
+        rows = connection.execute <<-SQL
+          SELECT * FROM #{table} #{expression};
+        SQL
+      end
+    end
+    rows_to_array(rows)
+  end
+
+  private
+  def init_object_from_row(row)
+    if row
+      data = Hash[columns.zip(row)]
+      new(data)
+    end
+  end
+
+  def rows_to_array(rows)
+    collection = BlocRecord::Collection.new
+    rows.each { |row| collection << new(Hash[columns.zip(row)]) }
+    collection
+  end
+
+  def method_missing(m, *args, &block)
+    if m.include? "find_by"
+      string_index = m.indexOf("y_")
+      m = m[string_index + 2: ]
+      find_by(m, args[0])
+    end
+  end
+end
+
+        value = args.first.values[0]
+        rows = connection.execute <<-SQL
+          SELECT * FROM #{table}
+
       end
     end
     rows_to_array(rows)
